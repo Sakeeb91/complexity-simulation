@@ -1,39 +1,38 @@
 """Core Brainfuck-Fusion interpreter primitives.
 
-This module will host the execution engine for BFF programs, including state
+This module implements the execution engine for BFF programs, including state
 management, instruction dispatch, and integration hooks for the primordial
 soup simulation.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Dict
 
-
-@dataclass
-class BFFInstruction:
-    """Lightweight representation of a single BFF instruction."""
-
-    opcode: str
-    argument: int | None = None
+from .tape import BFFTape
 
 
 class BFFInterpreter:
-    """Execute Brainfuck-Fusion bytecode against a tape structure.
+    """
+    Interpreter for BFF (Brainfuck-Fusion) programs.
 
-    The implementation will be fleshed out in Issue #2 and subsequent tasks.
+    Executes BFF programs on a tape that serves as both
+    instruction and data memory.
     """
 
-    def __init__(self) -> None:
-        self._instructions: List[BFFInstruction] = []
+    def __init__(self, tape: BFFTape, max_steps: int = 2**13):
+        """
+        Initialize the BFF interpreter.
 
-    def load(self, instructions: Iterable[BFFInstruction]) -> None:
-        """Load a sequence of instructions into the interpreter."""
-
-        self._instructions = list(instructions)
-
-    def run(self) -> None:
-        """Execute the loaded program. Placeholder until Issue #3 delivers the runtime."""
-
-        raise NotImplementedError("Execution engine planned for Issue #3")
+        Args:
+            tape: The BFF tape to execute on
+            max_steps: Maximum number of instructions to execute (default: 8192)
+        """
+        self.tape = tape
+        self.max_steps = max_steps
+        self.pc = 0  # Program counter (instruction pointer)
+        self.head0 = 0  # Read/write head 0
+        self.head1 = 0  # Read/write head 1
+        self.steps_executed = 0
+        self.terminated = False
+        self.bracket_map: Dict[int, int] = {}
