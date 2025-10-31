@@ -49,6 +49,25 @@ class ComplexityMetrics:
         return len(compressed)
 
     @staticmethod
+    def high_order_entropy(
+        data: ArrayLike, *, compression_quality: int = 2
+    ) -> float:
+        """Compute high-order entropy for the given data sequence."""
+
+        array = ComplexityMetrics._ensure_numpy(data)
+        n = array.size
+        if n == 0:
+            return 0.0
+
+        h_shannon = ComplexityMetrics.shannon_entropy(array)
+        k_approx = ComplexityMetrics.kolmogorov_complexity_approx(
+            array, compression_quality=compression_quality
+        )
+
+        normalized = (k_approx * 8.0) / n
+        return max(0.0, h_shannon - normalized)
+
+    @staticmethod
     def _ensure_numpy(data: ArrayLike) -> np.ndarray:
         if isinstance(data, np.ndarray):
             return data.astype(np.uint8, copy=False).ravel()
