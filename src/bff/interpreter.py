@@ -115,3 +115,45 @@ class BFFInterpreter:
                 else:
                     # Unmatched bracket - terminate
                     self.terminated = True
+
+    def step(self) -> bool:
+        """
+        Execute a single instruction.
+
+        Returns:
+            True if execution should continue, False if terminated
+        """
+        if self.terminated or self.steps_executed >= self.max_steps:
+            self.terminated = True
+            return False
+
+        # Check if PC is out of bounds
+        if self.pc < 0 or self.pc >= len(self.tape):
+            self.terminated = True
+            return False
+
+        # Fetch and execute instruction
+        instruction = self.tape[self.pc]
+        self._execute_instruction(instruction)
+
+        # Increment step counter
+        self.steps_executed += 1
+
+        # Advance program counter (unless it was modified by a jump instruction)
+        # For jump instructions, pc is already set to the target
+        # We need to advance pc only if we're not at a jump target
+        self.pc += 1
+
+        return not self.terminated
+
+    def execute(self) -> BFFTape:
+        """
+        Execute the program until termination or max_steps.
+
+        Returns:
+            The modified tape after execution
+        """
+        while self.step():
+            pass
+
+        return self.tape
