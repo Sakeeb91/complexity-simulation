@@ -84,3 +84,10 @@ class BFFInterpreter:
             self.head1 = (self.head1 - 1) % len(self.tape)
         elif instruction == ord('}'):
             self.head1 = (self.head1 + 1) % len(self.tape)
+        # Value modification instructions
+        elif instruction == ord('-'):
+            current_value = self.tape[self.head0]
+            self.tape[self.head0] = (current_value - 1) % 256
+        elif instruction == ord('+'):
+            current_value = self.tape[self.head0]
+            self.tape[self.head0] = (current_value + 1) % 256
