@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from typing import TYPE_CHECKING, Sequence, Union
 
+import brotli
 import numpy as np
 
 if TYPE_CHECKING:  # pragma: no cover - avoid runtime import cycle
@@ -33,6 +34,19 @@ class ComplexityMetrics:
             entropy -= p * np.log2(p)
 
         return float(entropy)
+
+    @staticmethod
+    def kolmogorov_complexity_approx(
+        data: ArrayLike, *, compression_quality: int = 2
+    ) -> int:
+        """Approximate Kolmogorov complexity using Brotli compression."""
+
+        payload = ComplexityMetrics._ensure_bytes(data)
+        if not payload:
+            return 0
+
+        compressed = brotli.compress(payload, quality=compression_quality)
+        return len(compressed)
 
     @staticmethod
     def _ensure_numpy(data: ArrayLike) -> np.ndarray:
