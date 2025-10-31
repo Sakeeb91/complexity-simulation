@@ -67,3 +67,20 @@ class BFFInterpreter:
             raise ValueError(f"Unmatched opening bracket at position {stack[0]}")
 
         return bracket_map
+
+    def _execute_instruction(self, instruction: int) -> None:
+        """
+        Execute a single instruction byte.
+
+        Args:
+            instruction: The instruction byte to execute
+        """
+        # Head movement instructions
+        if instruction == ord('<'):
+            self.head0 = (self.head0 - 1) % len(self.tape)
+        elif instruction == ord('>'):
+            self.head0 = (self.head0 + 1) % len(self.tape)
+        elif instruction == ord('{'):
+            self.head1 = (self.head1 - 1) % len(self.tape)
+        elif instruction == ord('}'):
+            self.head1 = (self.head1 + 1) % len(self.tape)
