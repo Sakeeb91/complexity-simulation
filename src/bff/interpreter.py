@@ -91,3 +91,10 @@ class BFFInterpreter:
         elif instruction == ord('+'):
             current_value = self.tape[self.head0]
             self.tape[self.head0] = (current_value + 1) % 256
+        # Copy operations
+        elif instruction == ord('.'):
+            # Copy from head0 to head1
+            self.tape[self.head1] = self.tape[self.head0]
+        elif instruction == ord(','):
+            # Copy from head1 to head0
+            self.tape[self.head0] = self.tape[self.head1]
