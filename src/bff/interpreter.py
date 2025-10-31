@@ -35,4 +35,35 @@ class BFFInterpreter:
         self.head1 = 0  # Read/write head 1
         self.steps_executed = 0
         self.terminated = False
-        self.bracket_map: Dict[int, int] = {}
+        self.bracket_map = self._build_bracket_map()
+
+    def _build_bracket_map(self) -> Dict[int, int]:
+        """
+        Build a mapping of bracket positions for O(1) jumps.
+
+        Returns:
+            Dictionary mapping [ positions to ] positions and vice versa
+
+        Raises:
+            ValueError: If brackets are unmatched
+        """
+        bracket_map = {}
+        stack = []
+
+        for i in range(len(self.tape)):
+            instruction = self.tape[i]
+
+            if instruction == ord('['):
+                stack.append(i)
+            elif instruction == ord(']'):
+                if not stack:
+                    raise ValueError(f"Unmatched closing bracket at position {i}")
+                opening = stack.pop()
+                # Map opening to closing and closing to opening
+                bracket_map[opening] = i
+                bracket_map[i] = opening
+
+        if stack:
+            raise ValueError(f"Unmatched opening bracket at position {stack[0]}")
+
+        return bracket_map
