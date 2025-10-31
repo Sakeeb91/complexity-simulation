@@ -98,3 +98,20 @@ class BFFInterpreter:
         elif instruction == ord(','):
             # Copy from head1 to head0
             self.tape[self.head0] = self.tape[self.head1]
+        # Loop/conditional jump instructions
+        elif instruction == ord('['):
+            # If tape[head0] == 0, jump to matching ]
+            if self.tape[self.head0] == 0:
+                if self.pc in self.bracket_map:
+                    self.pc = self.bracket_map[self.pc]
+                else:
+                    # Unmatched bracket - terminate
+                    self.terminated = True
+        elif instruction == ord(']'):
+            # If tape[head0] != 0, jump to matching [
+            if self.tape[self.head0] != 0:
+                if self.pc in self.bracket_map:
+                    self.pc = self.bracket_map[self.pc]
+                else:
+                    # Unmatched bracket - terminate
+                    self.terminated = True
