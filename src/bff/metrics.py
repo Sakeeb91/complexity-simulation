@@ -121,6 +121,8 @@ class ComplexityMetrics:
         if attr is not None:
             if callable(attr):
                 attr = attr()
+            if isinstance(attr, np.ndarray):
+                return attr.astype(np.uint8, copy=False).ravel()
             return ComplexityMetrics._ensure_numpy(attr)
         if isinstance(data, Sequence):
             return np.array([int(value) & 0xFF for value in data], dtype=np.uint8)
@@ -130,13 +132,13 @@ class ComplexityMetrics:
     def _ensure_bytes(data: ArrayLike) -> bytes:
         if isinstance(data, (bytes, bytearray, memoryview)):
             return bytes(data)
-        if isinstance(data, np.ndarray):
-            return data.astype(np.uint8, copy=False).tobytes()
         attr = getattr(data, "data", None)
         if attr is not None:
             if callable(attr):
                 attr = attr()
             return ComplexityMetrics._ensure_bytes(attr)
+        if isinstance(data, np.ndarray):
+            return data.astype(np.uint8, copy=False).tobytes()
         if isinstance(data, Sequence):
             return bytes(int(value) & 0xFF for value in data)
         raise TypeError("Unsupported data type for byte conversion")
@@ -159,7 +161,7 @@ class ComplexityMetrics:
         return programs
 
 
-def compute_entropy(sequence: bytes) -> float:
-    """Placeholder for high-order entropy metric from Issue #4."""
+def compute_entropy(sequence: ArrayLike) -> float:
+    """Backwards-compatible wrapper for ``ComplexityMetrics.high_order_entropy``."""
 
-    raise NotImplementedError("Metric implementation tracked in Issue #4")
+    return ComplexityMetrics.high_order_entropy(sequence)
