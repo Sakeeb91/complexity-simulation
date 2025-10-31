@@ -20,5 +20,6 @@ setup(
         "seaborn>=0.11.0",
         "pytest>=7.0.0",
         "tqdm>=4.62.0",
+        "brotli>=1.0.9",
     ],
 )
