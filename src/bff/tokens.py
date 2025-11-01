@@ -204,3 +204,42 @@ class TokenInterpreter(BFFInterpreter):
         if not isinstance(tape, TokenTape):
             raise TypeError("TokenInterpreter requires TokenTape")
         super().__init__(tape, max_steps)
+
+    def _execute_instruction(self, instruction: int) -> None:
+        """
+        Execute instruction with token tracking.
+
+        Token propagation rules:
+        - Copy operations (. and ,) copy both data and tokens
+        - Increment/decrement (+/-) preserve token origin, update char only
+        - All other operations don't affect tokens
+
+        Args:
+            instruction: The instruction byte to execute
+        """
+        # Check for copy operations that need token tracking
+        if instruction == ord('.'):
+            # Copy from head0 to head1 (including token)
+            self.tape.copy_with_token(self.head0, self.head1)
+        elif instruction == ord(','):
+            # Copy from head1 to head0 (including token)
+            self.tape.copy_with_token(self.head1, self.head0)
+        elif instruction == ord('+') or instruction == ord('-'):
+            # Increment/decrement operations preserve token origin
+            idx = self.head0 % len(self.tape)
+            current_value = self.tape.data[idx]
+
+            if instruction == ord('+'):
+                new_value = (current_value + 1) % 256
+            else:  # ord('-')
+                new_value = (current_value - 1) % 256
+
+            # Update data and token char (preserving epoch/position)
+            self.tape.data[idx] = new_value
+            if self.tape.tokens[idx] != 0:
+                token = Token.from_uint64(self.tape.tokens[idx])
+                token.char = new_value
+                self.tape.tokens[idx] = token.to_uint64()
+        else:
+            # Other instructions don't affect tokens, use base implementation
+            super()._execute_instruction(instruction)
