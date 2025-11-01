@@ -381,3 +381,182 @@ class TestTokenAnalyzer:
         assert epoch == 100
         assert position == 50000
         assert char == 42
+
+
+class TestTokenIntegration:
+    """Integration tests for token tracking through execution."""
+
+    def test_token_propagation_through_copy(self):
+        """Test tokens propagate correctly through a copy program."""
+        tape = TokenTape(length=128)
+
+        # Set up initial program: >>.>>.
+        # This copies head0 to head1, moves both heads, and copies again
+        tape[0] = ord('>')
+        tape[1] = ord('>')
+        tape[2] = ord('.')
+        tape[3] = ord('>')
+        tape[4] = ord('>')
+        tape[5] = ord('.')
+
+        # Set up a unique token at position 0
+        origin_token = Token(epoch=0, position=0, char=tape.data[0]).to_uint64()
+        tape.tokens[0] = origin_token
+
+        interpreter = TokenInterpreter(tape)
+        # Execute the program
+        for _ in range(6):
+            if not interpreter.step():
+                break
+
+        # The token should have propagated through the copy operations
+        # After >>, head0=2, head1=0
+        # After ., token from head0=2 copied to head1=0
+        # This test mainly verifies no crashes occur
+
+    def test_token_diversity_tracks_replication(self):
+        """Test token diversity decreases as replication occurs."""
+        # Create multiple programs with unique tokens
+        programs = [
+            TokenTape.random(length=10, epoch=0, program_idx=i, seed=i)
+            for i in range(5)
+        ]
+
+        # Initially, diversity should be 1.0 (all unique)
+        initial_diversity = TokenAnalyzer.token_diversity(programs)
+        assert initial_diversity == 1.0
+
+        # Simulate replication by copying tokens from program 0 to others
+        replicator_token = programs[0].tokens[0]
+        for prog in programs[1:]:
+            prog.tokens[:] = replicator_token
+
+        # Diversity should drop significantly
+        final_diversity = TokenAnalyzer.token_diversity(programs)
+        assert final_diversity < 0.1  # Most tokens are now the same
+
+    def test_increment_chain_preserves_origin(self):
+        """Test that a chain of increments preserves the original token."""
+        tape = TokenTape(length=128)
+
+        # Program: ++++++++++  (10 increments)
+        for i in range(10):
+            tape[i] = ord('+')
+
+        # Set initial token
+        origin_token = Token(epoch=5, position=100, char=0)
+        tape.tokens[0] = origin_token.to_uint64()
+        tape.data[0] = 0
+
+        interpreter = TokenInterpreter(tape)
+        interpreter.head0 = 0
+
+        # Execute all 10 increments
+        for _ in range(10):
+            if not interpreter.step():
+                break
+
+        # Value should be 10
+        assert tape.data[0] == 10
+
+        # Token should still have original epoch/position
+        final_token = Token.from_uint64(tape.tokens[0])
+        assert final_token.epoch == 5
+        assert final_token.position == 100
+        assert final_token.char == 10
+
+    def test_mixed_operations_token_tracking(self):
+        """Test token tracking through mixed operations."""
+        tape = TokenTape(length=128)
+
+        # Program: +>.  (increment, move head0, copy to head1)
+        tape[0] = ord('+')
+        tape[1] = ord('>')
+        tape[2] = ord('.')
+
+        # Set up tokens
+        tape.tokens[0] = Token(epoch=0, position=0, char=0).to_uint64()
+        tape.data[0] = 0
+
+        interpreter = TokenInterpreter(tape)
+        interpreter.head0 = 0
+        interpreter.head1 = 10
+
+        # Step 1: + at position 0
+        interpreter.step()
+        assert tape.data[0] == 1
+        token0 = Token.from_uint64(tape.tokens[0])
+        assert token0.char == 1
+
+        # Step 2: > moves head0 to 1
+        interpreter.step()
+        assert interpreter.head0 == 1
+
+        # Step 3: . copies from head0=1 to head1=10
+        interpreter.step()
+        # Token at position 1 should be copied to position 10
+        assert tape.tokens[10] == tape.tokens[1]
+
+    def test_token_uniqueness_across_soup(self):
+        """Test that tokens remain unique across a simulated soup."""
+        # Create a "soup" of 100 programs
+        programs = [
+            TokenTape.random(length=64, epoch=0, program_idx=i, seed=i)
+            for i in range(100)
+        ]
+
+        # All tokens should be unique initially
+        unique_count = TokenAnalyzer.count_unique_tokens(programs)
+        total_count = 100 * 64
+        assert unique_count == total_count
+
+        # Find top tokens (should all have count=1)
+        top = TokenAnalyzer.top_tokens(programs, k=10)
+        assert len(top) >= 10
+        # All should have count 1 (or very few duplicates due to random chance with zeros)
+        for token_val, count in top[:5]:
+            if token_val != 0:  # Ignore zero tokens
+                assert count == 1
+
+    def test_token_overflow_handling(self):
+        """Test token handling with value overflow."""
+        tape = TokenTape(length=128)
+
+        # Program: + (increment from 255 should wrap to 0)
+        tape[0] = ord('+')
+        tape.data[0] = 255
+        tape.tokens[0] = Token(epoch=10, position=20, char=255).to_uint64()
+
+        interpreter = TokenInterpreter(tape)
+        interpreter.step()
+
+        # Value should wrap to 0
+        assert tape.data[0] == 0
+
+        # Token should update char to 0
+        token = Token.from_uint64(tape.tokens[0])
+        assert token.epoch == 10
+        assert token.position == 20
+        assert token.char == 0
+
+    def test_token_underflow_handling(self):
+        """Test token handling with value underflow."""
+        tape = TokenTape(length=128)
+
+        # Program: - (decrement from 0 should wrap to 255)
+        tape[0] = ord('-')
+        tape.data[0] = 0
+        tape.tokens[0] = Token(epoch=10, position=20, char=0).to_uint64()
+
+        interpreter = TokenInterpreter(tape)
+        interpreter.step()
+
+        # Value should wrap to 255
+        assert tape.data[0] == 255
+
+        # Token should update char to 255
+        token = Token.from_uint64(tape.tokens[0])
+        assert token.epoch == 10
+        assert token.position == 20
+        assert token.char == 255
+
