@@ -471,8 +471,8 @@ class TestTokenIntegration:
         tape[11] = ord('>')
         tape[12] = ord('.')
 
-        # Data at position 0 with token
-        tape.tokens[0] = Token(epoch=0, position=0, char=0).to_uint64()
+        # Data at position 0 with token (use non-zero epoch to avoid token=0)
+        tape.tokens[0] = Token(epoch=1, position=0, char=0).to_uint64()
         tape._data[0] = 0  # Set data value to 0
 
         interpreter = TokenInterpreter(tape)
@@ -484,7 +484,8 @@ class TestTokenIntegration:
         interpreter.step()
         assert tape._data[0] == 1
         token0 = Token.from_uint64(tape.tokens[0])
-        assert token0.char == 1
+        assert token0.epoch == 1  # Epoch preserved
+        assert token0.char == 1  # Char updated
 
         # Step 2: > at PC=11, moves head0 to 1
         interpreter.step()
