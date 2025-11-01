@@ -435,17 +435,18 @@ class TestTokenIntegration:
         """Test that a chain of increments preserves the original token."""
         tape = TokenTape(length=128)
 
-        # Program: ++++++++++  (10 increments)
+        # Program at positions 10-19: ++++++++++  (10 increments)
         for i in range(10):
-            tape[i] = ord('+')
+            tape[10 + i] = ord('+')
 
-        # Set initial token
+        # Data at position 0 with token
         origin_token = Token(epoch=5, position=100, char=0)
         tape.tokens[0] = origin_token.to_uint64()
-        tape.data[0] = 0
+        tape._data[0] = 0
 
         interpreter = TokenInterpreter(tape)
-        interpreter.head0 = 0
+        interpreter.pc = 10  # Start at the program location
+        interpreter.head0 = 0  # Point to data location
 
         # Execute all 10 increments
         for _ in range(10):
@@ -453,7 +454,7 @@ class TestTokenIntegration:
                 break
 
         # Value should be 10
-        assert tape.data[0] == 10
+        assert tape._data[0] == 10
 
         # Token should still have original epoch/position
         final_token = Token.from_uint64(tape.tokens[0])
@@ -465,33 +466,34 @@ class TestTokenIntegration:
         """Test token tracking through mixed operations."""
         tape = TokenTape(length=128)
 
-        # Program: +>.  (increment, move head0, copy to head1)
-        tape[0] = ord('+')
-        tape[1] = ord('>')
-        tape[2] = ord('.')
+        # Program at positions 10-12: +>.
+        tape[10] = ord('+')
+        tape[11] = ord('>')
+        tape[12] = ord('.')
 
-        # Set up tokens
+        # Data at position 0 with token
         tape.tokens[0] = Token(epoch=0, position=0, char=0).to_uint64()
-        tape.data[0] = 0
+        tape._data[0] = 0  # Set data value to 0
 
         interpreter = TokenInterpreter(tape)
+        interpreter.pc = 10  # Start execution at position 10
         interpreter.head0 = 0
-        interpreter.head1 = 10
+        interpreter.head1 = 5
 
-        # Step 1: + at position 0
+        # Step 1: + at PC=10, increments data[head0=0]
         interpreter.step()
-        assert tape.data[0] == 1
+        assert tape._data[0] == 1
         token0 = Token.from_uint64(tape.tokens[0])
         assert token0.char == 1
 
-        # Step 2: > moves head0 to 1
+        # Step 2: > at PC=11, moves head0 to 1
         interpreter.step()
         assert interpreter.head0 == 1
 
-        # Step 3: . copies from head0=1 to head1=10
+        # Step 3: . at PC=12, copies from head0=1 to head1=5
         interpreter.step()
-        # Token at position 1 should be copied to position 10
-        assert tape.tokens[10] == tape.tokens[1]
+        # Token at position 1 should be copied to position 5
+        assert tape.tokens[5] == tape.tokens[1]
 
     def test_token_uniqueness_across_soup(self):
         """Test that tokens remain unique across a simulated soup."""
@@ -518,16 +520,19 @@ class TestTokenIntegration:
         """Test token handling with value overflow."""
         tape = TokenTape(length=128)
 
-        # Program: + (increment from 255 should wrap to 0)
-        tape[0] = ord('+')
-        tape.data[0] = 255
+        # Program at position 10: +
+        tape[10] = ord('+')
+        # Data at position 0: value 255
+        tape._data[0] = 255
         tape.tokens[0] = Token(epoch=10, position=20, char=255).to_uint64()
 
         interpreter = TokenInterpreter(tape)
+        interpreter.pc = 10
+        interpreter.head0 = 0
         interpreter.step()
 
         # Value should wrap to 0
-        assert tape.data[0] == 0
+        assert tape._data[0] == 0
 
         # Token should update char to 0
         token = Token.from_uint64(tape.tokens[0])
@@ -539,16 +544,19 @@ class TestTokenIntegration:
         """Test token handling with value underflow."""
         tape = TokenTape(length=128)
 
-        # Program: - (decrement from 0 should wrap to 255)
-        tape[0] = ord('-')
-        tape.data[0] = 0
+        # Program at position 10: -
+        tape[10] = ord('-')
+        # Data at position 0: value 0
+        tape._data[0] = 0
         tape.tokens[0] = Token(epoch=10, position=20, char=0).to_uint64()
 
         interpreter = TokenInterpreter(tape)
+        interpreter.pc = 10
+        interpreter.head0 = 0
         interpreter.step()
 
         # Value should wrap to 255
-        assert tape.data[0] == 255
+        assert tape._data[0] == 255
 
         # Token should update char to 255
         token = Token.from_uint64(tape.tokens[0])
