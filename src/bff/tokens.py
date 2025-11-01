@@ -110,17 +110,12 @@ class TokenTape(BFFTape):
 
     def __setitem__(self, index: int, value: int):
         """
-        Set byte and update token char only.
+        Set byte value.
 
-        This preserves the token's epoch and position.
+        Note: This does NOT update the token. Tokens are only updated
+        by the TokenInterpreter during execution (for +/- operations).
         """
         super().__setitem__(index, value)
-        # Update char in existing token
-        idx = index % len(self)
-        if self.tokens[idx] != 0:
-            token = Token.from_uint64(self.tokens[idx])
-            token.char = value
-            self.tokens[idx] = token.to_uint64()
 
     @property
     def data(self) -> np.ndarray:
@@ -227,7 +222,7 @@ class TokenInterpreter(BFFInterpreter):
         elif instruction == ord('+') or instruction == ord('-'):
             # Increment/decrement operations preserve token origin
             idx = self.head0 % len(self.tape)
-            current_value = self.tape.data[idx]
+            current_value = int(self.tape.data[idx])  # Convert to Python int
 
             if instruction == ord('+'):
                 new_value = (current_value + 1) % 256
@@ -235,7 +230,7 @@ class TokenInterpreter(BFFInterpreter):
                 new_value = (current_value - 1) % 256
 
             # Update data and token char (preserving epoch/position)
-            self.tape.data[idx] = new_value
+            self.tape.data[idx] = np.uint8(new_value)
             if self.tape.tokens[idx] != 0:
                 token = Token.from_uint64(self.tape.tokens[idx])
                 token.char = new_value

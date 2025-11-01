@@ -426,14 +426,15 @@ class TestTokenIntegration:
         initial_diversity = TokenAnalyzer.token_diversity(programs)
         assert initial_diversity == 1.0
 
-        # Simulate replication by copying tokens from program 0 to others
-        replicator_token = programs[0].tokens[0]
+        # Simulate replication by copying ALL tokens from program 0 to others
         for prog in programs[1:]:
-            prog.tokens[:] = replicator_token
+            prog.tokens[:] = programs[0].tokens.copy()
 
         # Diversity should drop significantly
+        # Now we have 10 unique tokens (from program 0) repeated 5 times = 50 total
+        # So diversity = 10/50 = 0.2
         final_diversity = TokenAnalyzer.token_diversity(programs)
-        assert final_diversity < 0.1  # Most tokens are now the same
+        assert final_diversity == 0.2  # 10 unique tokens out of 50 total
 
     def test_increment_chain_preserves_origin(self):
         """Test that a chain of increments preserves the original token."""
