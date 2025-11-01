@@ -222,7 +222,7 @@ class TokenInterpreter(BFFInterpreter):
         elif instruction == ord('+') or instruction == ord('-'):
             # Increment/decrement operations preserve token origin
             idx = self.head0 % len(self.tape)
-            current_value = int(self.tape.data[idx])  # Convert to Python int
+            current_value = int(self.tape._data[idx])  # Convert to Python int
 
             if instruction == ord('+'):
                 new_value = (current_value + 1) % 256
@@ -230,7 +230,7 @@ class TokenInterpreter(BFFInterpreter):
                 new_value = (current_value - 1) % 256
 
             # Update data and token char (preserving epoch/position)
-            self.tape.data[idx] = np.uint8(new_value)
+            self.tape._data[idx] = np.uint8(new_value)
             if self.tape.tokens[idx] != 0:
                 token = Token.from_uint64(self.tape.tokens[idx])
                 token.char = new_value

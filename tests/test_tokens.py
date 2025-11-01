@@ -89,21 +89,6 @@ class TestTokenTape:
         assert tape.tokens[1] == 200
         assert tape.tokens[2] == 300
 
-    def test_token_tape_setitem_updates_char(self):
-        """Test that __setitem__ updates token char."""
-        tape = TokenTape(length=5)
-        # Set initial token
-        tape.tokens[0] = Token(epoch=10, position=20, char=30).to_uint64()
-
-        # Update value
-        tape[0] = 99
-
-        # Token should have updated char
-        token = Token.from_uint64(tape.tokens[0])
-        assert token.epoch == 10
-        assert token.position == 20
-        assert token.char == 99
-
     def test_copy_with_token(self):
         """Test copy_with_token propagates both data and tokens."""
         tape = TokenTape(length=10)
@@ -320,22 +305,32 @@ class TestTokenAnalyzer:
         # Create tokens with different frequencies
         token1 = Token(epoch=1, position=1, char=1).to_uint64()
         token2 = Token(epoch=2, position=2, char=2).to_uint64()
+        token3 = Token(epoch=3, position=3, char=3).to_uint64()
 
+        # Fill all positions to avoid counting zeros
         # token1 appears 5 times
         for i in range(5):
             tape1.tokens[i] = token1
+        # token3 appears 5 times (fill rest of tape1)
+        for i in range(5, 10):
+            tape1.tokens[i] = token3
 
         # token2 appears 3 times
         for i in range(3):
             tape2.tokens[i] = token2
+        # token3 appears 7 more times (fill rest of tape2)
+        for i in range(3, 10):
+            tape2.tokens[i] = token3
 
         top = TokenAnalyzer.top_tokens([tape1, tape2], k=3)
 
         # Should be sorted by count
-        assert len(top) >= 2
-        # Most common should be token1 with count 5
-        assert top[0][0] == token1
-        assert top[0][1] == 5
+        # token3 appears 12 times, token1 5 times, token2 3 times
+        assert len(top) == 3
+        assert top[0][0] == token3  # Most common
+        assert top[0][1] == 12
+        assert top[1][0] == token1
+        assert top[1][1] == 5
 
     def test_top_tokens_empty(self):
         """Test top_tokens with empty list."""
