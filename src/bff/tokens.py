@@ -13,6 +13,7 @@ from typing import Optional, List, Tuple
 import numpy as np
 
 from .tape import BFFTape
+from .interpreter import BFFInterpreter
 
 
 @dataclass
@@ -178,3 +179,28 @@ class TokenTape(BFFTape):
             tokens[i] = token.to_uint64()
 
         return cls(length, data, tokens)
+
+
+class TokenInterpreter(BFFInterpreter):
+    """
+    BFF interpreter with token tracking.
+
+    Extends the base BFFInterpreter to track token propagation
+    through copy operations and preserve token origins through
+    increment/decrement operations.
+    """
+
+    def __init__(self, tape: TokenTape, max_steps: int = 2**13):
+        """
+        Initialize with a TokenTape.
+
+        Args:
+            tape: The TokenTape to execute on
+            max_steps: Maximum number of instructions to execute
+
+        Raises:
+            TypeError: If tape is not a TokenTape instance
+        """
+        if not isinstance(tape, TokenTape):
+            raise TypeError("TokenInterpreter requires TokenTape")
+        super().__init__(tape, max_steps)
