@@ -130,3 +130,51 @@ class TokenTape(BFFTape):
         """Create a deep copy of the token tape."""
         return TokenTape(length=len(self), data=self._data.copy(),
                         tokens=self.tokens.copy())
+
+    def copy_with_token(self, src_idx: int, dst_idx: int):
+        """
+        Copy byte and token from src to dst.
+
+        This is used by the BFF copy instructions (. and ,) to
+        propagate both data and origin information.
+
+        Args:
+            src_idx: Source index
+            dst_idx: Destination index
+        """
+        src_idx = src_idx % len(self)
+        dst_idx = dst_idx % len(self)
+        self._data[dst_idx] = self._data[src_idx]
+        self.tokens[dst_idx] = self.tokens[src_idx]
+
+    @classmethod
+    def random(cls, length: int = 64, epoch: int = 0,
+               program_idx: int = 0, seed: Optional[int] = None) -> 'TokenTape':
+        """
+        Create random tape with unique tokens.
+
+        Each byte is initialized with a unique token containing:
+        - epoch: The current epoch number
+        - position: program_idx * length + byte_idx (unique global position)
+        - char: The random byte value
+
+        Args:
+            length: Tape length
+            epoch: Current epoch (for token creation)
+            program_idx: Program index in soup (for unique positions)
+            seed: Random seed for reproducibility
+
+        Returns:
+            TokenTape with random data and unique tokens
+        """
+        rng = np.random.default_rng(seed)
+        data = rng.integers(0, 256, size=length, dtype=np.uint8)
+
+        # Create unique tokens for each byte
+        tokens = np.zeros(length, dtype=np.uint64)
+        for i in range(length):
+            position = program_idx * length + i
+            token = Token(epoch, position, int(data[i]))
+            tokens[i] = token.to_uint64()
+
+        return cls(length, data, tokens)
