@@ -243,3 +243,92 @@ class TokenInterpreter(BFFInterpreter):
         else:
             # Other instructions don't affect tokens, use base implementation
             super()._execute_instruction(instruction)
+
+
+class TokenAnalyzer:
+    """
+    Analyze token statistics in a soup.
+
+    Provides methods for analyzing token diversity, finding popular tokens,
+    and understanding self-replicator emergence through token tracking.
+    """
+
+    @staticmethod
+    def count_unique_tokens(programs: List[TokenTape]) -> int:
+        """
+        Count unique tokens across all programs in the soup.
+
+        Args:
+            programs: List of TokenTape instances
+
+        Returns:
+            Number of unique tokens
+        """
+        if not programs:
+            return 0
+
+        all_tokens = np.concatenate([p.tokens for p in programs])
+        return len(np.unique(all_tokens))
+
+    @staticmethod
+    def top_tokens(programs: List[TokenTape], k: int = 32) -> List[Tuple[int, int]]:
+        """
+        Get the k most common tokens.
+
+        Args:
+            programs: List of TokenTape instances
+            k: Number of top tokens to return
+
+        Returns:
+            List of (token, count) tuples sorted by count descending
+        """
+        if not programs:
+            return []
+
+        all_tokens = np.concatenate([p.tokens for p in programs])
+        unique, counts = np.unique(all_tokens, return_counts=True)
+
+        # Sort by count descending
+        sorted_indices = np.argsort(-counts)
+
+        return [(int(unique[i]), int(counts[i])) for i in sorted_indices[:k]]
+
+    @staticmethod
+    def token_diversity(programs: List[TokenTape]) -> float:
+        """
+        Calculate token diversity (unique tokens / total tokens).
+
+        This metric helps detect self-replicator emergence. When a self-replicator
+        dominates the soup, token diversity drops significantly as the same tokens
+        propagate through many programs.
+
+        Args:
+            programs: List of TokenTape instances
+
+        Returns:
+            Diversity value between 0 and 1 (1 = all tokens unique, 0 = all same)
+        """
+        if not programs:
+            return 0.0
+
+        total_tokens = sum(len(p) for p in programs)
+        unique_tokens = TokenAnalyzer.count_unique_tokens(programs)
+
+        if total_tokens == 0:
+            return 0.0
+
+        return unique_tokens / total_tokens
+
+    @staticmethod
+    def decode_token(token_value: int) -> Tuple[int, int, int]:
+        """
+        Decode a packed token value into its components.
+
+        Args:
+            token_value: Packed uint64 token
+
+        Returns:
+            Tuple of (epoch, position, char)
+        """
+        token = Token.from_uint64(token_value)
+        return (token.epoch, token.position, token.char)
