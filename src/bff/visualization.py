@@ -141,3 +141,55 @@ class SoupVisualizer:
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.show()
+
+    def plot_token_statistics(
+        self,
+        history: List[Dict[str, Any]],
+        save_path: Optional[str] = None
+    ):
+        """
+        Plot token tracking statistics over time.
+
+        Replicates Figure 1 from the paper.
+
+        Args:
+            history: List of dicts with token statistics per epoch.
+                     Each dict should have 'epoch', 'unique_tokens', and
+                     'high_order_entropy' keys.
+            save_path: Optional path to save figure
+
+        Example:
+            >>> visualizer = SoupVisualizer()
+            >>> history = [
+            ...     {'epoch': 0, 'unique_tokens': 100, 'high_order_entropy': 0.1},
+            ...     {'epoch': 1, 'unique_tokens': 200, 'high_order_entropy': 0.3}
+            ... ]
+            >>> visualizer.plot_token_statistics(history)
+        """
+        epochs = [h['epoch'] for h in history]
+        unique_tokens = [h['unique_tokens'] for h in history]
+        complexity = [h['high_order_entropy'] for h in history]
+
+        fig, ax1 = plt.subplots(figsize=(12, 6))
+
+        # Plot unique tokens
+        color = 'tab:blue'
+        ax1.set_xlabel('Epoch', fontsize=12)
+        ax1.set_ylabel('Unique Tokens', color=color, fontsize=12)
+        ax1.plot(epochs, unique_tokens, color=color, linewidth=2)
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax1.set_yscale('log')
+
+        # Plot complexity on second y-axis
+        ax2 = ax1.twinx()
+        color = 'tab:red'
+        ax2.set_ylabel('High-order Entropy', color=color, fontsize=12)
+        ax2.plot(epochs, complexity, color=color, linewidth=2, linestyle='--')
+        ax2.tick_params(axis='y', labelcolor=color)
+
+        plt.title('Token Statistics and Complexity Over Time', fontsize=14)
+        fig.tight_layout()
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
