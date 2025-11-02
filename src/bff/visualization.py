@@ -247,3 +247,42 @@ class SoupVisualizer:
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.show()
+
+    def plot_complexity_histogram(
+        self,
+        datasets: Dict[str, List[float]],
+        bins: int = 20,
+        save_path: Optional[str] = None
+    ):
+        """
+        Plot histogram comparison of final complexity.
+
+        Replicates Figure 7 from the paper.
+
+        Args:
+            datasets: Dict mapping label to list of complexity values
+            bins: Number of histogram bins
+            save_path: Optional path to save figure
+
+        Example:
+            >>> visualizer = SoupVisualizer()
+            >>> datasets = {
+            ...     'Control': [0.1, 0.2, 0.3, 0.4],
+            ...     'Treatment': [0.3, 0.4, 0.5, 0.6]
+            ... }
+            >>> visualizer.plot_complexity_histogram(datasets)
+        """
+        plt.figure(figsize=(12, 6))
+
+        for label, values in datasets.items():
+            plt.hist(values, bins=bins, alpha=0.6, label=label, edgecolor='black')
+
+        plt.xlabel('High-order Entropy', fontsize=12)
+        plt.ylabel('Count', fontsize=12)
+        plt.title('Final Complexity Distribution Comparison', fontsize=14)
+        plt.legend()
+        plt.grid(True, alpha=0.3, axis='y')
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
