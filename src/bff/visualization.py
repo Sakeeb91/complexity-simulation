@@ -193,3 +193,57 @@ class SoupVisualizer:
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.show()
+
+    def plot_mutation_rate_heatmap(
+        self,
+        results: Dict[Tuple[float, int], int],
+        mutation_rates: List[float],
+        epoch_bins: List[int],
+        save_path: Optional[str] = None
+    ):
+        """
+        Plot heat map of mutation rate vs time to complexity.
+
+        Replicates Figure 6 from the paper.
+
+        Args:
+            results: Dict mapping (mutation_rate, epoch_bin) to count
+            mutation_rates: List of mutation rates tested
+            epoch_bins: List of epoch bins
+            save_path: Optional path to save figure
+
+        Example:
+            >>> visualizer = SoupVisualizer()
+            >>> results = {(0.001, 100): 5, (0.001, 200): 3, (0.01, 100): 7}
+            >>> mutation_rates = [0.001, 0.01]
+            >>> epoch_bins = [100, 200]
+            >>> visualizer.plot_mutation_rate_heatmap(results, mutation_rates, epoch_bins)
+        """
+        # Create matrix
+        matrix = np.zeros((len(mutation_rates), len(epoch_bins)))
+        for i, mr in enumerate(mutation_rates):
+            for j, eb in enumerate(epoch_bins):
+                matrix[i, j] = results.get((mr, eb), 0)
+
+        # Normalize rows
+        row_sums = matrix.sum(axis=1, keepdims=True)
+        matrix = np.divide(matrix, row_sums, where=row_sums != 0)
+
+        # Plot
+        plt.figure(figsize=(12, 8))
+        sns.heatmap(
+            matrix,
+            annot=True,
+            fmt='.2f',
+            cmap='YlOrRd',
+            xticklabels=epoch_bins,
+            yticklabels=[f'{mr:.3%}' for mr in mutation_rates],
+            cbar_kws={'label': 'Fraction of runs'}
+        )
+        plt.xlabel('Epochs', fontsize=12)
+        plt.ylabel('Mutation Rate', fontsize=12)
+        plt.title('Distribution of Time to ≥ 1 Complexity', fontsize=14)
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
