@@ -286,3 +286,48 @@ class SoupVisualizer:
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.show()
+
+    def plot_2d_grid(
+        self,
+        grid_soup: Any,
+        save_path: Optional[str] = None
+    ):
+        """
+        Visualize 2D spatial soup.
+
+        Replicates Figure 8 from the paper.
+
+        Args:
+            grid_soup: Grid2DSoup instance with height, width, programs, and epoch attributes
+            save_path: Optional path to save figure
+
+        Example:
+            >>> visualizer = SoupVisualizer()
+            >>> # Assuming grid_soup is a Grid2DSoup instance
+            >>> visualizer.plot_2d_grid(grid_soup, 'spatial_soup.png')
+        """
+        # Create color map based on program content
+        # Use hash of first few bytes for color
+        grid = np.zeros((grid_soup.height, grid_soup.width, 3))
+
+        for i in range(grid_soup.height):
+            for j in range(grid_soup.width):
+                idx = i * grid_soup.width + j
+                prog = grid_soup.programs[idx]
+
+                # Simple hash to RGB
+                hash_val = hash(tuple(prog.data[:4])) % (256**3)
+                r = (hash_val >> 16) & 0xFF
+                g = (hash_val >> 8) & 0xFF
+                b = hash_val & 0xFF
+
+                grid[i, j] = [r/255, g/255, b/255]
+
+        plt.figure(figsize=(12, 8))
+        plt.imshow(grid, interpolation='nearest')
+        plt.title(f'2D Spatial Soup (Epoch {grid_soup.epoch})', fontsize=14)
+        plt.axis('off')
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.show()
