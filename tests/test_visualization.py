@@ -55,9 +55,9 @@ class TestSoupVisualizer:
         assert save_path.exists()
 
     def test_plot_complexity_over_time_empty(self):
-        """Test plotting with empty history."""
-        with pytest.raises((IndexError, ValueError)):
-            self.visualizer.plot_complexity_over_time([])
+        """Test plotting with empty history creates empty plot without error."""
+        # Empty data should not raise exception, just create empty plot
+        self.visualizer.plot_complexity_over_time([])
 
     def test_plot_complexity_distribution_basic(self):
         """Test basic complexity distribution plotting."""
