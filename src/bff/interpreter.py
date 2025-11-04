@@ -41,11 +41,11 @@ class BFFInterpreter:
         """
         Build a mapping of bracket positions for O(1) jumps.
 
+        Only matched brackets are included in the map. Unmatched brackets
+        will cause termination during execution when encountered.
+
         Returns:
             Dictionary mapping [ positions to ] positions and vice versa
-
-        Raises:
-            ValueError: If brackets are unmatched
         """
         bracket_map = {}
         stack = []
@@ -56,15 +56,16 @@ class BFFInterpreter:
             if instruction == ord('['):
                 stack.append(i)
             elif instruction == ord(']'):
-                if not stack:
-                    raise ValueError(f"Unmatched closing bracket at position {i}")
-                opening = stack.pop()
-                # Map opening to closing and closing to opening
-                bracket_map[opening] = i
-                bracket_map[i] = opening
+                if stack:
+                    opening = stack.pop()
+                    # Map opening to closing and closing to opening
+                    bracket_map[opening] = i
+                    bracket_map[i] = opening
+                # If stack is empty, this is an unmatched ']'
+                # It will be handled during execution (not mapped)
 
-        if stack:
-            raise ValueError(f"Unmatched opening bracket at position {stack[0]}")
+        # Unmatched '[' brackets remain in stack but are not mapped
+        # They will cause termination during execution
 
         return bracket_map
 

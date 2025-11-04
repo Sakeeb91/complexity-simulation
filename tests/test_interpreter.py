@@ -252,22 +252,32 @@ class TestLoops:
         interpreter.execute()
 
     def test_unmatched_opening_bracket(self):
-        """Test that unmatched [ is detected."""
+        """Test that unmatched [ causes termination during execution."""
         tape = BFFTape(length=10)
         tape[0] = ord('[')
+        tape[1] = ord('+')  # Some instruction after [
         # No matching ]
 
-        with pytest.raises(ValueError, match="Unmatched opening bracket"):
-            BFFInterpreter(tape)
+        # Should initialize without error
+        interpreter = BFFInterpreter(tape)
+
+        # Execute - should terminate when encountering unmatched [
+        interpreter.execute()
+        assert interpreter.terminated
 
     def test_unmatched_closing_bracket(self):
-        """Test that unmatched ] is detected."""
+        """Test that unmatched ] causes termination during execution."""
         tape = BFFTape(length=10)
         tape[0] = ord(']')
+        tape[1] = ord('+')  # Some instruction after ]
         # No matching [
 
-        with pytest.raises(ValueError, match="Unmatched closing bracket"):
-            BFFInterpreter(tape)
+        # Should initialize without error
+        interpreter = BFFInterpreter(tape)
+
+        # Execute - should terminate when encountering unmatched ]
+        interpreter.execute()
+        assert interpreter.terminated
 
 
 class TestExecution:
